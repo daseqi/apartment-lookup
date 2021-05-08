@@ -1,0 +1,140 @@
+The approach I took for this project involves:
+
+one main price heap (min heap) : 'prices'
+one main footage heap (max heap) : 'footage'
+multiple price heaps for cities, that are stored at the END of a DLB (as the value) : stored in 'cityPriceDLB'
+multiple footage heaps for cities, that are stored at the END of a DLB (as the value) : stored in 'cityFootageDLB'
+a DLB that stores indexs of the Apartments in the main heap : 'dlb'
+a DLB that stores indexs of the Apartments in the city heap : 'cityDLB'
+
+PURPOSE OF EACH FILE: 
+
+PriceHeap.java : for prioritizing the prices either of all apartments, or of a specific city.  
+FootageHeap.java : for prioritizing the sqFt of either of all apartments, or of a specific city. 
+PricesDLB.java (String ID : int index ) : for storing indexes in either 1) the main heaps or 2) the city heaps.
+cityPriceDLB.java (String city : PriceHeap) : for storing specfic city's priceHeap.
+cityFootageDLB.java (String city : FootageHeap) : for storing a specfic city's FootageHeap.
+
+'String ID' above denotes a string of the Apartment's address, apt number, and zip, concatenated with 
+whitespace removed.
+
+
+
+
+So, to give you a general descriptive framework of the program:
+
+-both my min and max heap are built off of the code provided by 
+the authors of our textbook.
+
+-all apartments are placed into a main min heap, declared as 'prices' and
+a main max heap, declared as 'footage'. 
+
+-when the apartments are placed into the two main heaps, they are 
+also placed into a DLB (PricesDLB) for quick indexing into the main heaps.
+
+-PricesDLB takes advantage of the fact that the index for a specific apartment
+in the price heap will be the SAME as the index for that same apartment in the
+footage heap. Hence, we only need one DLB for indexing to both heaps!
+
+-PricesDLB takes the apartment ID (defined above) as the key, and stores the index
+of that apartment in the two main heaps as the value. Note: when inserting 
+into the PricesDLB, the index of the next apartment to be inserted will always
+be equal to the heap.size(), since the heap's keys[] indexes linearly, while 
+the pq[] and qp[] that are arrays used for heap manipulation :)
+
+-So when a user wants to update or delete an existing apartment, the user
+will enter the address, apt number, and zip, which will be concatenated 
+(with whitespace removed) and passed into the PricesDLB to find the apartment
+index (constant time operation), and that index will then be updated/removed in the heaps,
+with log n performance, taking into account the swims() or sinks()!
+
+
+-So what about the prices and footage for a specfic city?
+
+
+-Here, we take the same approach, BUT, we implement two special 
+DLBs, cityPriceDLB and cityFootageDLB, which are functionally the same,
+except one DLB stores a PriceHeap and the other DLB stores a FootageHeap, respectively.
+
+
+-cityPriceDLB and cityFootageDLB are DLBs that take the city as the key, and store
+a heap (in this case, either a priceHeap or FootageHeap respectively), as the value!
+
+
+-So when inserting an apartment, for each apartment, we look at its city, see if the
+city exists in the cityPriceDLB (note we don't have to check both DLBs, if it exists
+in cityPriceDLB, it exists in cityFootageDLB by default)! If it exists, we add the Apartment
+to each DLBs respective heaps, using the same indexing technique as in the main heaps. If
+it does not exist, we simply create a new ( city : heap ) pair in the DLBs.
+
+
+-So the performance for each city insert is log n, since the DLBs give us constant 
+time, and then we have to insert to the heap attached to each DLBs, which (like above)
+yields log n time.
+
+
+NOTE: when updating/deleting from the specific city heaps, we first get the city heaps 
+using the DLB (O(1)), then we look up the index of the specific apartment we want to
+update/delete (again, O(1), using the cityDLB), and only then can we manipulate the
+heap accordingly (O(log n))!
+
+
+-Now lets examine what it takes for inserting, updating, deleting, and retrieving with
+the total program functionality! 
+
+
+INSERT :
+
+-place the index of the apartment that is getting inserted into the main two heaps into the main DLB (O(1))
+-swin() the new insertion in the two main heaps (O(log n))
+-if the city exists:
+    -travese the two city DLBs to get to their respective city heaps (O(1))
+    -swim() the new insertion into the two city heaps (O(log n))
+-else
+    -create the city heaps in their two respective city DLBs (O(1))
+    -swim() the new insertion into the two city heaps (O(log n))
+
+    WORST CASE : O(log n)
+
+
+UPDATE :
+
+-find the index of the apartment that is getting updating in the main two heaps in the main DLB (O(1))
+-update index in heap, swin() or sink() depending on the new priority (O(log n))
+-get the city heaps from their respective heap-value backed DLBs (O(1)) 
+-find the index of the apartment that is getting updating in the two city heaps in the city index DLB (O(1))
+-update index in heap, swin() or sink() depending on the new priority (O(log n))
+
+    WORST CASE : O(log n)
+
+
+DELETE :
+-find the index of the apartment that is getting deleted in the main two heaps in the main DLB (O(1))
+-delete index in heap, swin() or sink() depending on the deletion (O(log n))
+-get the city heaps from their respective heap-value backed DLBs (O(1)) 
+-find the index of the apartment that is getting deleted in the two city heaps in the city index DLB (O(1))
+-delete index in heap, swin() or sink() depending on the deletion (O(log n))
+
+    WORST CASE : O(log n)
+
+
+RETRIEVE FROM A MAIN HEAPS:
+-simply return (but not remove) the first index (O(1)) 
+
+RETRIEVE FROM A CITY HEAPS:
+-traverse the heap-value backed DLBs to get to the city specific heaps(O(1))
+-simply return (but not remove) the first index (O(1)) 
+
+    WORST CASE : O(1) (since we do no manipulation of the heaps!)
+
+
+
+As you can see, the worst case performance is O(log n)!
+
+
+JUSTIFICATION : 
+
+The reason I chose DLBs was due to their sparse-ness (a major advantage over R-way tries), which is perfect for 
+the IDs and city keys, as well as the DLB allowing for constant time operations! All DLB operations are 
+technically O(w), where w is the width of the key string...but since that width is independent of input size, 
+we can interpret that as constant. Of course, all the major heap operations are O(log n) with O(n) space.
